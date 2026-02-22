@@ -1,0 +1,18 @@
+---
+servername: localhost
+port: 8080
+listen_addr_port: 8080
+oidc_remote_user_claim: email
+dex:
+  static_passwords:
+  - email: ood@localhost
+    password: ood
+    username: ood
+    userID: 7e3146ab-83fb-4642-ad0d-3120a76bfd9a
+  connectors: []
+  frontend:
+    theme: coreos
+
+rnode_uri: '/rnode'
+node_uri: '/node'
+host_regex: '[^/]+'

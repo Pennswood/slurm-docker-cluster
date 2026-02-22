@@ -64,12 +64,14 @@ services:
     command: ["slurmd"]
     hostname: c1
     container_name: c1
+    privileged: true
     volumes:
       - etc_munge:/etc/munge
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - var_log_slurm:/var/log/slurm
-      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
+      - home_ood:/home/ood
+      - ./cgroup.conf:/etc/slurm/cgroup.conf
     expose:
       - "6818"
     depends_on:
@@ -86,14 +88,38 @@ services:
     command: ["slurmd"]
     hostname: c2
     container_name: c2
+    privileged: true
     volumes:
       - etc_munge:/etc/munge
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - var_log_slurm:/var/log/slurm
-      - ./cgroup.conf:/etc/slurm/cgroup.conf # <-- ADICIONADO AQUI
+      - home_ood:/home/ood
+      - ./cgroup.conf:/etc/slurm/cgroup.conf
     expose:
       - "6818"
+    depends_on:
+      - "slurmctld"
+    networks:
+      - slurm-network
+
+  ondemand:
+    image: slurm-ondemand:${IMAGE_TAG:-25.05.3}
+    build:
+      context: .
+      dockerfile: Dockerfile.ondemand
+      args:
+        SLURM_TAG: ${SLURM_TAG:-slurm-25-05-3-1}
+    container_name: ondemand
+    hostname: ondemand
+    volumes:
+      - etc_munge:/etc/munge
+      - etc_slurm:/etc/slurm
+      - slurm_jobdir:/data
+      - home_ood:/home/ood
+    ports:
+      - "8080:8080"
+      - "5556:5556"
     depends_on:
       - "slurmctld"
     networks:
@@ -105,6 +131,7 @@ volumes:
   slurm_jobdir:
   var_lib_mysql:
   var_log_slurm:
+  home_ood:
 
 networks:
   slurm-network:

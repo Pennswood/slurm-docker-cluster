@@ -1,0 +1,18 @@
+---
+v2:
+  metadata:
+    title: "Slurm Docker Cluster"
+  login:
+    host: ondemand
+  job:
+    adapter: slurm
+    host: slurmctld
+    bin: /usr/bin
+    conf: /etc/slurm/slurm.conf
+  batch_connect:
+    basic:
+      script_wrapper: |
+        %s
+    vnc:
+      script_wrapper: |
+        %s

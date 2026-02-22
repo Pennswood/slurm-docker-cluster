@@ -1,0 +1,98 @@
+FROM rockylinux/rockylinux:8
+
+LABEL description="Open OnDemand on Rocky Linux 8 with Slurm integration"
+
+ARG SLURM_TAG
+
+RUN set -ex \
+    && yum makecache \
+    && yum -y update \
+    && yum -y install dnf-plugins-core \
+    && yum config-manager --set-enabled powertools \
+    && yum -y install \
+       wget \
+       bzip2 \
+       perl \
+       gcc \
+       gcc-c++ \
+       git \
+       gnupg \
+       make \
+       munge \
+       munge-devel \
+       python3-devel \
+       python3-pip \
+       python3 \
+       mariadb-devel \
+       psmisc \
+       bash-completion \
+       vim-enhanced \
+       http-parser-devel \
+       json-c-devel \
+       sudo \
+       openssh-server \
+       openssh-clients \
+    && yum clean all \
+    && rm -rf /var/cache/yum
+
+RUN alternatives --set python /usr/bin/python3
+
+RUN set -x \
+    && git clone -b ${SLURM_TAG} --single-branch --depth=1 https://github.com/SchedMD/slurm.git \
+    && pushd slurm \
+    && ./configure --enable-debug --prefix=/usr --sysconfdir=/etc/slurm \
+        --with-mysql_config=/usr/bin --libdir=/usr/lib64 \
+    && make install \
+    && install -D -m644 etc/cgroup.conf.example /etc/slurm/cgroup.conf.example \
+    && install -D -m644 etc/slurm.conf.example /etc/slurm/slurm.conf.example \
+    && install -D -m644 etc/slurmdbd.conf.example /etc/slurm/slurmdbd.conf.example \
+    && install -D -m644 contribs/slurm_completion_help/slurm_completion.sh /etc/profile.d/slurm_completion.sh \
+    && popd \
+    && rm -rf slurm \
+    && groupadd -r --gid=990 slurm \
+    && useradd -r -g slurm --uid=990 slurm \
+    && mkdir -p /etc/sysconfig/slurm \
+        /var/spool/slurmd \
+        /var/run/slurmd \
+        /var/run/slurmdbd \
+        /var/lib/slurmd \
+        /var/log/slurm \
+        /data \
+    && chown -R slurm:slurm /var/*/slurm*
+
+RUN dnf install -y https://yum.osc.edu/ondemand/latest/ondemand-release-web-latest-1-6.noarch.rpm \
+    && dnf install -y epel-release \
+    && dnf clean all && rm -rf /var/cache/dnf/*
+
+RUN RCLONE_VERSION=1.73.1 \
+    && curl -fsSL -o /tmp/rclone.rpm \
+       "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-arm64.rpm" \
+    && rpm -ivh /tmp/rclone.rpm \
+    && rm -f /tmp/rclone.rpm
+
+RUN dnf -y module enable nodejs:22 ruby:3.3 \
+    && dnf install -y ondemand ondemand-dex \
+    && dnf clean all && rm -rf /var/cache/dnf/*
+
+RUN useradd -m -u 1000 ood \
+    && echo "ood:ood" | chpasswd \
+    && mkdir -p /run/sshd \
+    && su - ood -c "ssh-keygen -t ecdsa -f ~/.ssh/id_ecdsa -N '' && cat ~/.ssh/id_ecdsa.pub >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys" \
+    && sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+RUN chmod 600 /etc/shadow
+
+COPY ood/ood_portal.yml /etc/ood/config/ood_portal.yml
+COPY ood/clusters.d/slurm.yml /etc/ood/config/clusters.d/slurm.yml
+COPY ood/nginx_stage.yml /etc/ood/config/nginx_stage.yml
+
+RUN /opt/ood/ood-portal-generator/sbin/update_ood_portal --insecure
+
+COPY ood/session_store.rb /var/www/ood/apps/sys/myjobs/config/initializers/session_store.rb
+
+COPY ood/ondemand-entrypoint.sh /usr/local/bin/ondemand-entrypoint.sh
+RUN chmod +x /usr/local/bin/ondemand-entrypoint.sh
+
+EXPOSE 8080 5556
+
+ENTRYPOINT ["/usr/local/bin/ondemand-entrypoint.sh"]
