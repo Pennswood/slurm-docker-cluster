@@ -1,0 +1,15 @@
+<%
+  script_dir = File.dirname(python_script_path.strip)
+%>
+---
+batch_connect:
+  template: "basic"
+  llm_review_globs:
+    - "*.msg"
+    - "*.log"
+script:
+  workdir: "<%= script_dir %>"
+  output_path: "<%= File.join(script_dir, 'output.log') %>"
+  native:
+    - "--partition"
+    - "<%= bc_queue %>"

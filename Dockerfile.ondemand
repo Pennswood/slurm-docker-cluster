@@ -74,6 +74,10 @@ RUN dnf -y module enable nodejs:22 ruby:3.3 \
     && dnf install -y ondemand ondemand-dex \
     && dnf clean all && rm -rf /var/cache/dnf/*
 
+RUN dnf install -y gcc gcc-c++ libyaml-devel redhat-rpm-config \
+       xz libxml2-devel libxslt-devel zlib-devel rsync \
+    && dnf clean all && rm -rf /var/cache/dnf/*
+
 RUN useradd -m -u 1000 ood \
     && echo "ood:ood" | chpasswd \
     && mkdir -p /run/sshd \
@@ -90,8 +94,11 @@ RUN /opt/ood/ood-portal-generator/sbin/update_ood_portal --insecure
 
 COPY ood/session_store.rb /var/www/ood/apps/sys/myjobs/config/initializers/session_store.rb
 
+COPY bc_python_job /var/www/ood/apps/sys/bc_python_job
+
+COPY dev-deploy.sh /usr/local/bin/dev-deploy
 COPY ood/ondemand-entrypoint.sh /usr/local/bin/ondemand-entrypoint.sh
-RUN chmod +x /usr/local/bin/ondemand-entrypoint.sh
+RUN chmod +x /usr/local/bin/ondemand-entrypoint.sh /usr/local/bin/dev-deploy
 
 EXPOSE 8080 5556
 

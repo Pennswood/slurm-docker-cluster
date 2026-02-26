@@ -15,6 +15,14 @@ do
 done
 echo "-- slurmctld is now active ..."
 
+echo "---> Writing LLM env vars to /etc/ood/profile ..."
+mkdir -p /etc/ood
+cat > /etc/ood/profile <<ENVEOF
+export LLM_API_KEY="${LLM_API_KEY}"
+export LLM_API_URL="${LLM_API_URL}"
+export LLM_MODEL="${LLM_MODEL}"
+ENVEOF
+
 echo "---> Configuring OnDemand portal ..."
 /opt/ood/ood-portal-generator/sbin/update_ood_portal --insecure
 

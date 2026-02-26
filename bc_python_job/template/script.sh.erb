@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+echo "=== Python Job Started at $(date) ==="
+echo "Host: $(hostname)"
+echo "Working directory: $(pwd)"
+echo ""
+
+SCRIPT_PATH="<%= context.python_script_path.strip %>"
+
+if [[ ! -f "$SCRIPT_PATH" ]]; then
+    echo "ERROR: Python script not found at $SCRIPT_PATH"
+    exit 1
+fi
+
+echo "=== Running: python3 $SCRIPT_PATH ==="
+echo ""
+
+python3 "$SCRIPT_PATH" 2>&1
+
+EXIT_CODE=$?
+echo ""
+echo "=== Python Job Finished at $(date) with exit code $EXIT_CODE ==="

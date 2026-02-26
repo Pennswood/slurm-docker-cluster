@@ -1,1 +1,5 @@
 ---
+pun_custom_env_declarations:
+  - LLM_API_KEY
+  - LLM_API_URL
+  - LLM_MODEL

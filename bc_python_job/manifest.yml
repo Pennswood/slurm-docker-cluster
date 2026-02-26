@@ -1,0 +1,9 @@
+---
+name: Python Job
+icon: fa://python
+category: Interactive Apps
+subcategory: Scripting
+role: batch_connect
+description: |
+  Submit a Python script to the Slurm cluster and view its output
+  through an interactive session.

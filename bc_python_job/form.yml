@@ -1,0 +1,29 @@
+---
+cluster: "slurm"
+
+attributes:
+  python_script_path:
+    widget: "path_selector"
+    label: "Python Script Path"
+    directory: "/home/ood"
+    show_hidden: false
+    show_files: true
+    required: true
+    help: |
+      Select a `.py` file to run on the cluster.
+
+  bc_num_hours:
+    widget: "number_field"
+    value: 1
+    min: 1
+    max: 24
+    label: "Wall Time (hours)"
+
+  bc_queue:
+    label: "Partition"
+    value: "normal"
+
+form:
+  - python_script_path
+  - bc_num_hours
+  - bc_queue

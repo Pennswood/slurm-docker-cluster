@@ -1,0 +1,6 @@
+[submodule "ondemand"]
+	path = ondemand
+	url = https://github.com/Pennswood/ondemand.git
+[submodule "ood-documentation"]
+	path = ood-documentation
+	url = https://github.com/Pennswood/ood-documentation.git

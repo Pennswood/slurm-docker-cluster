@@ -112,11 +112,16 @@ services:
         SLURM_TAG: ${SLURM_TAG:-slurm-25-05-3-1}
     container_name: ondemand
     hostname: ondemand
+    environment:
+      LLM_API_KEY: "${LLM_API_KEY:-}"
+      LLM_API_URL: "${LLM_API_URL:-https://generativelanguage.googleapis.com/v1beta/openai/chat/completions}"
+      LLM_MODEL: "${LLM_MODEL:-gemini-2.0-flash}"
     volumes:
       - etc_munge:/etc/munge
       - etc_slurm:/etc/slurm
       - slurm_jobdir:/data
       - home_ood:/home/ood
+      - ./ondemand:/opt/ood/src
     ports:
       - "8080:8080"
       - "5556:5556"

@@ -1,0 +1,79 @@
+<div class="llm-review-section" id="llm-review-<%= id %>">
+  <hr>
+  <h6><i class="fas fa-robot"></i> AI Job Review</h6>
+
+  <div class="mb-2">
+    <input type="text" class="form-control form-control-sm"
+      id="llm-prompt-<%= id %>"
+      placeholder="Ask a question about this job (optional)..."
+      style="max-width: 500px; display: inline-block; width: 70%;">
+    <button class="btn btn-sm btn-primary"
+      onclick="requestLlmReview('<%= id %>')"
+      id="llm-btn-<%= id %>">
+      <i class="fas fa-magic"></i> Review with AI
+    </button>
+  </div>
+
+  <div id="llm-result-<%= id %>" style="display:none;">
+    <div class="card mt-2">
+      <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+        <pre id="llm-content-<%= id %>" style="white-space: pre-wrap; word-wrap: break-word; margin: 0; font-size: 0.85em;"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function requestLlmReview(sessionId) {
+  var btn = document.getElementById('llm-btn-' + sessionId);
+  var resultDiv = document.getElementById('llm-result-' + sessionId);
+  var contentPre = document.getElementById('llm-content-' + sessionId);
+  var promptInput = document.getElementById('llm-prompt-' + sessionId);
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reviewing...';
+  resultDiv.style.display = 'block';
+  contentPre.textContent = 'Sending to LLM for review...';
+  contentPre.style.color = '';
+
+  var csrfToken = document.querySelector('meta[name="csrf-token"]');
+  var headers = { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' };
+  if (csrfToken) headers['X-CSRF-Token'] = csrfToken.getAttribute('content');
+
+  var body = '';
+  if (promptInput.value.trim()) body = 'user_prompt=' + encodeURIComponent(promptInput.value.trim());
+
+  fetch('/pun/sys/dashboard/batch_connect/sessions/' + sessionId + '/llm_review', {
+    method: 'POST', headers: headers, body: body
+  })
+  .then(function(r) {
+    var contentType = r.headers.get('content-type') || '';
+    if (!r.ok) {
+      if (contentType.indexOf('application/json') !== -1) {
+        return r.json().then(function(data) { throw new Error(data.error || 'Server error ' + r.status); });
+      }
+      throw new Error('Server returned ' + r.status + ' — the LLM review endpoint may not be deployed. Redeploy the dashboard app.');
+    }
+    if (contentType.indexOf('application/json') === -1) {
+      throw new Error('Server returned non-JSON response (got ' + contentType + '). Redeploy the dashboard app.');
+    }
+    return r.json();
+  })
+  .then(function(data) {
+    if (data.error) {
+      contentPre.textContent = 'Error: ' + data.error;
+      contentPre.style.color = '#dc3545';
+    } else {
+      contentPre.textContent = data.review || 'No review content returned.';
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-magic"></i> Review with AI';
+  })
+  .catch(function(err) {
+    contentPre.textContent = 'Request failed: ' + err.message;
+    contentPre.style.color = '#dc3545';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-magic"></i> Review with AI';
+  });
+}
+</script>
